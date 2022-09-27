@@ -17,6 +17,14 @@ Download the video named in youtube-url and create a gif of it. Will embed the a
 -sub-lang lang: sub language to choose
 ```
 
+## PREREQUISITES
+
+This script requires [`ffmpeg`](https://ffmpeg.org/) and [`yt-dlp`](https://github.com/yt-dlp/yt-dlp).
+
+[`gifsicle`](https://www.lcdf.org/gifsicle/) is an optional dependency.
+
+This script has only been tested on a mac, where `brew install ffmpeg yt-dlp gifsicle` should work to get your dependencies in order. Please report bugs if it fails on other platforms.
+
 ## TIME
 
 The start and finish times can be specified in seconds, or mm:ss or hh:mm:ss.ms. ffmpeg is flexible in what it accepts. https://trac.ffmpeg.org/wiki/Seeking
