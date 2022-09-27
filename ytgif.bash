@@ -21,7 +21,7 @@ OPTIONS
   -gifsicle:      post-process the image with `gifsicle -O2`
   -start time:    the time to start the video at
   -finish time:   the time to finish the video at
-  -nosubs:        do not include subtitles in the outputeven if they're available
+  -nosubs:        do not include subtitles in the output even if they're available
   -sub-lang lang: sub language to choose
 
 TIME
