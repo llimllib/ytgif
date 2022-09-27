@@ -41,6 +41,11 @@ Download a bit of a linear algebra lecture, and subtitle it in spanish:
     ytgif -sub-lang es -start 26:54 -finish 27:02 \
         "https://www.youtube.com/watch?v=QVKj3LADCnA" "strang.gif"
 
+Create a tiny rickroll gif, optimize it, and don't include subtitles:
+
+    ytgif -gifsicle -scale 30 -start 0.5 -finish 3 -nosubs \
+       "https://www.youtube.com/watch?v=dQw4w9WgXcQ" "rickroll.gif"
+
 ## NOTES
 
 - Be careful to quote the youtube URL, if it contain the & character it will not work unless quoted

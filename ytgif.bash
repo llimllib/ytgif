@@ -40,11 +40,18 @@ Download the "I can't believe you've done this" clip, and turn the whole thing i
 
 Download the "don't call me shirley" clip from youtube, cut from 1:00 to 1:11.5, lower the fps to 10, and save it as airplane.gif:
 
-    ytgif -start 1:00 -finish 1:11.5 -fps 10 "https://www.youtube.com/watch?v=ixljWVyPby0" "airplane.gif"
+    ytgif -start 1:00 -finish 1:11.5 -fps 10 \
+        "https://www.youtube.com/watch?v=ixljWVyPby0" "airplane.gif"
 
 Download a bit of a linear algebra lecture, and subtitle it in spanish:
 
-    ytgif -sub-lang es -start 26:54 -finish 27:02 "https://www.youtube.com/watch?v=QVKj3LADCnA" "strang.gif"
+    ytgif -sub-lang es -start 26:54 -finish 27:02 \
+        "https://www.youtube.com/watch?v=QVKj3LADCnA" "strang.gif"
+
+Create a tiny rickroll gif, optimize it, and don't include subtitles:
+
+    ytgif -gifsicle -scale 30 -start 0.5 -finish 3 -nosubs \
+       "https://www.youtube.com/watch?v=dQw4w9WgXcQ" "rickroll.gif"
 
 NOTES
 
