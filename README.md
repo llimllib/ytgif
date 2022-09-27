@@ -1,6 +1,6 @@
 # ytgif
 
-Usage: ytgif [OPTIONS] <youtube-url> <output_file>
+Usage: `ytgif [OPTIONS] <youtube-url> <output_file>`
 
 Download the video named in youtube-url and create a gif of it. Will embed the auto-generated subtitles if they're available. Start and finish times should be in ffmpeg format.
 
