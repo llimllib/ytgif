@@ -2,7 +2,7 @@
 
 Usage: `ytgif [OPTIONS] <youtube-url> <output_file>`
 
-Download the video named in youtube-url and create a gif of it. Will embed the auto-generated subtitles if they're available. Start and finish times should be in ffmpeg format.
+Download the video named in youtube-url and create a gif of it. Will embed the auto-generated subtitles if they're available. You can use the start and finish times to trim it to the duration you'd like.
 
 ## OPTIONS
 
