@@ -6,6 +6,13 @@ Download the video named in youtube-url and create a gif of it. Will embed the a
 
 ![](https://github.com/llimllib/ytgif/blob/main/wow.gif?raw=true)
 
+That gif was generated with:
+
+```shell
+ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
+    "https://www.youtube.com/watch?v=KlLMlJ2tDkg&t=50s" wow.gif
+```
+
 ## OPTIONS
 
 ```
