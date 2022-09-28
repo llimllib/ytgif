@@ -33,9 +33,9 @@ Download the "I can't believe you've done this" clip, and turn the whole thing i
 
     ytgif "https://www.youtube.com/watch?v=wKbU8B-QVZk" "donethis.gif"
 
-Download the "don't call me shirley" clip from youtube, cut from 1:00 to 1:11.5, lower the fps to 10, and save it as airplane.gif:
+Download the "don't call me shirley" clip from youtube, cut from 1:02 to 1:10.9 lower the fps to 10, and save it as airplane.gif:
 
-    ytgif -start 1:00 -finish 1:11.5 -fps 10 \
+    ytgif -start 1:02 -finish 1:10.9 -fps 10 \
         "https://www.youtube.com/watch?v=ixljWVyPby0" "airplane.gif"
 
 Download a bit of a linear algebra lecture, and subtitle it in spanish:
@@ -57,6 +57,7 @@ NOTES
 
 - Be careful to quote the youtube URL, if it contain the & character it will not work unless quoted
 - ytgif caches downloaded videos in `/tmp/ytgif_cache`, so you can quickly try edits to the gif without re-downloading videos. These can be quite large, so you may want to clear that folder when you're done making a gif
+- youtube's auto subs are far from perfect, but often better than nothing
 EOF
         exit 1
 }
@@ -199,11 +200,19 @@ if [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         exit 1
     fi
 else
+    # we include -ss and finish twice because we need to tell ffmpeg to
+    # properly normalize the timestamps it uses for the subtitles. Honestly I
+    # just throw more and more flags at ffmpeg until something like what I want
+    # comes out the other side
+    # see https://video.stackexchange.com/a/30046
     if ! ffmpeg "${ffmpegquiet[@]}" \
         -ss "$start_" \
         "${finish[@]}" \
+        -copyts \
         -i "${input_video[0]}" \
         -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,subtitles=${subtitles[0]}" \
+        -ss "$start_" \
+        "${finish[@]}" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
