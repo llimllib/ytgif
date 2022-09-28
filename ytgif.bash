@@ -168,9 +168,6 @@ ytdl_video_outfile="$ytgif_cache_folder/video_$yturl_clean.%(ext)s"
 # store the subtitles in the cache folder, in the format sub_<sanitized url>.ext
 ytdl_sub_outfile="$ytgif_cache_folder/sub_$yturl_clean"
 
-# TODO: ability to provide custom subtitles?
-# TODO: ability to customize font and subtitle placement?
-
 # check for cached video; if one does not exist, download the video
 input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 if [ ${#input_video[@]} -eq 0 ]; then
