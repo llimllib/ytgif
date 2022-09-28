@@ -57,7 +57,7 @@ NOTES
 
 - Be careful to quote the youtube URL, if it contain the & character it will not work unless quoted
 - ytgif caches downloaded videos in `/tmp/ytgif_cache`, so you can quickly try edits to the gif without re-downloading videos. These can be quite large, so you may want to clear that folder when you're done making a gif
-- youtube's auto subs are far from perfect, but often better than nothing
+- youtube's auto subtitles are far from perfect, but often better than nothing
 EOF
         exit 1
 }
