@@ -48,9 +48,9 @@ Download the "I can't believe you've done this" clip, and turn the whole thing i
 
     ytgif "https://www.youtube.com/watch?v=wKbU8B-QVZk" "donethis.gif"
 
-Download the "don't call me shirley" clip from youtube, cut from 1:00 to 1:11.5, lower the fps to 10, and save it as airplane.gif:
+Download the "don't call me shirley" clip from youtube, cut from 1:02 to 1:10.9 lower the fps to 10, and save it as airplane.gif:
 
-    ytgif -start 1:00 -finish 1:11.5 -fps 10 \
+    ytgif -start 1:02 -finish 1:10.9 -fps 10 \
         "https://www.youtube.com/watch?v=ixljWVyPby0" "airplane.gif"
 
 Download a bit of a linear algebra lecture, and subtitle it in spanish:
