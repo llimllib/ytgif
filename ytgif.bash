@@ -28,6 +28,7 @@ OPTIONS
   -nosubs:        do not include subtitles in the output even if they're available
   -sub-lang lang: sub language to choose
   -autosubs:      prefer youtube's auto-generated subtitles
+  -caption:       provide a caption to use rather than subtitles
 
 TIME
 
@@ -81,6 +82,7 @@ finish=()
 nosubs=
 sublang=
 subflags=(--write-subs --write-auto-subs)
+caption=
 
 # parse command line flags
 while true; do
@@ -102,6 +104,8 @@ while true; do
         shift; sublang=$1; shift
     elif [[ $1 == "-autosubs" ]]; then
         shift; subflags=(--write-auto-subs)
+    elif [[ $1 == "-caption" ]]; then
+        shift; caption=$1; shift
     elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
         usage
     else
@@ -199,7 +203,23 @@ input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
 # if we don't have any subtitles available, just encode to gif without them
-if [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
+if [ -n "$caption" ]; then
+    # to avoid the nightmare of quoting bash strings, dump the caption into a
+    # text file and use the `textfile` option to ffmpeg
+    echo "$caption" > cap.txt
+    if ! ffmpeg "${ffmpegquiet[@]}" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -copyts \
+        -i "${input_video[0]}" \
+        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,drawtext=borderw=2:bordercolor=white:fontcolor=#111111:fontsize=40:x=(w-text_w)/2:y=(h-text_h)-10:textfile=cap.txt" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        "$output"; then
+        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     if ! ffmpeg "${ffmpegquiet[@]}" \
         -ss "$start_" \
         "${finish[@]}" \
