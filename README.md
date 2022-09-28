@@ -24,6 +24,7 @@ ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
 -finish time:   the time to finish the video at
 -nosubs:        do not include subtitles in the output even if they're available
 -sub-lang lang: sub language to choose
+-autosubs:      prefer youtube's auto-generated subtitles
 ```
 
 ## PREREQUISITES
