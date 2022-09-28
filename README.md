@@ -29,11 +29,13 @@ ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
 
 ## PREREQUISITES
 
+This script is written for modern bash, and won't work on the ancient bash that OS X ships by default. To install a newer bash, use `brew install bash`. (I tried to work around the old bash, but it's so painful that it makes the script even worse. Sorry)
+
 This script requires [`ffmpeg`](https://ffmpeg.org/) and [`yt-dlp`](https://github.com/yt-dlp/yt-dlp).
 
 [`gifsicle`](https://www.lcdf.org/gifsicle/) is an optional dependency.
 
-This script has only been tested on a mac, where `brew install ffmpeg yt-dlp gifsicle` should work to get your dependencies in order. Please report bugs if it fails on other platforms.
+This script has only been tested on a mac, where `brew install bash ffmpeg yt-dlp gifsicle` should work to get your dependencies in order. Please report bugs if it fails on other platforms.
 
 ## TIME
 
@@ -41,7 +43,7 @@ The start and finish times can be specified in seconds, or mm:ss or hh:mm:ss.ms.
 
 ## INSTALLING
 
-copy ytgif.bash to somewhere on your $PATH and rename it `ytgif`
+After installing the prerequisites, copy `ytgif.bash` to somewhere on your `$PATH` and rename it `ytgif`
 
 ## EXAMPLES
 

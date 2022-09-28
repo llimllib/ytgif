@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Mac by default ships a version 3 bash that doesn't work with this script. I
+# don't know if it works with version 4, and locally I can be sure it works
+# with version 5. I'm going to have it quit with an error if the user has less
+# than version 4, because that's all I'm sure does not work. Please report
+# further version issues https://github.com/llimllib/ytgif
+if [ ! "${BASH_VERSINFO:-0}" -ge 4 ]; then
+    printf "\033[31mYour version of bash is too old, please upgrade it to run this script\033[0m\n"
+    exit
+fi
+
 function usage() {
         cat <<"EOF"
 Usage: ytgif [OPTIONS] <youtube-url> <output_file>
