@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
-
-# when we try to expand a subtitle file glob, we want the expanded array to be
-# empty if there are no subs available
-# https://unix.stackexchange.com/a/34012
-shopt -s nullglob
 
 function usage() {
         cat <<"EOF"
@@ -23,6 +17,7 @@ OPTIONS
   -finish time:   the time to finish the video at
   -nosubs:        do not include subtitles in the output even if they're available
   -sub-lang lang: sub language to choose
+  -autosubs:      use autosubs only
 
 TIME
 
@@ -53,9 +48,15 @@ Create a tiny rickroll gif, optimize it, and don't include subtitles:
     ytgif -gifsicle -scale 30 -start 0.5 -finish 3 -nosubs \
        "https://www.youtube.com/watch?v=dQw4w9WgXcQ" "rickroll.gif"
 
+Create a gif of owen wilson saying "wow":
+
+    ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
+        "https://www.youtube.com/watch?v=KlLMlJ2tDkg&t=50s" wow.gif
+
 NOTES
 
 - Be careful to quote the youtube URL, if it contain the & character it will not work unless quoted
+- ytgif caches downloaded videos in `/tmp/ytgif_cache`, so you can quickly try edits to the gif without re-downloading videos. These can be quite large, so you may want to clear that folder when you're done making a gif
 EOF
         exit 1
 }
@@ -65,9 +66,10 @@ gifsicle=
 scale=640
 fps=20
 start_=0
-finish=
+finish=()
 nosubs=
 sublang=
+subflags=(--write-subs --write-auto-subs)
 
 # parse command line flags
 while true; do
@@ -82,11 +84,13 @@ while true; do
     elif [[ $1 == "-start" ]]; then
         shift; start_=$1; shift
     elif [[ $1 == "-finish" ]]; then
-        shift; finish=$1; shift
+        shift; finish=(-to "$1"); shift
     elif [[ $1 == "-nosubs" ]]; then
         shift; nosubs=true
     elif [[ $1 == "-sub-lang" ]]; then
         shift; sublang=$1; shift
+    elif [[ $1 == "-autosubs" ]]; then
+        shift; subflags=(--write-auto-subs)
     elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
         usage
     else
@@ -102,10 +106,6 @@ if [ -n "$verbose" ]; then
     set -x
     ffmpegquiet=()
     ytdlpquiet=()
-fi
-
-if [ -n "$finish" ]; then
-    finish="-to $finish"
 fi
 
 sublangs=()
@@ -149,28 +149,53 @@ function finish {
 }
 trap finish EXIT
 
-# TODO: ability to provide custom subtitles?
-# TODO: ability to customize font and subtitle placement?
-if ! yt-dlp -f bv \
-    "${ytdlpquiet[@]}" \
-    "${sublangs[@]}" \
-    --write-subs \
-    --write-auto-subs \
-    --external-downloader ffmpeg \
-    --external-downloader-args "ffmpeg_i:-ss $start_ $finish" \
-    -o "$output.webm" \
-    "$yturl"; then
-    printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
-    exit 1
+ytgif_cache_folder="/tmp/ytgif_cache"
+if [ ! -d $ytgif_cache_folder ]; then
+    mkdir $ytgif_cache_folder
 fi
 
-# TODO: better way to calculate the subtitle file name? Would be ideal if I
-#       could get yt-dlp to tell me where it is somehow
-subtitles=(*.vtt)
+# when we try to expand a subtitle file glob, we want the expanded array to be
+# empty if there are no subs available
+# https://unix.stackexchange.com/a/34012
+shopt -s nullglob
+
+# sanitize string to use it as our cache key - keep only ascii a-zA-Z0-9
+yturl_clean=${yturl//[^a-zA-Z0-9]/}
+
+# store the video in the cache folder, in the format video_<sanitized url>.ext
+ytdl_video_outfile="$ytgif_cache_folder/video_$yturl_clean.%(ext)s"
+
+# store the subtitles in the cache folder, in the format sub_<sanitized url>.ext
+ytdl_sub_outfile="$ytgif_cache_folder/sub_$yturl_clean"
+
+# TODO: ability to provide custom subtitles?
+# TODO: ability to customize font and subtitle placement?
+
+# check for cached video; if one does not exist, download the video
+input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
+if [ ${#input_video[@]} -eq 0 ]; then
+    if ! yt-dlp -f bv \
+        "${ytdlpquiet[@]}" \
+        "${sublangs[@]}" \
+        "${subflags[@]}" \
+        -o "$ytdl_video_outfile" \
+        -o "subtitle:$ytdl_sub_outfile" \
+        "$yturl"; then
+        printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+fi
+
+# evaluate the glob to get the input video and subtitle files
+input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
+subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
+
 # if we don't have any subtitles available, just encode to gif without them
 if [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     if ! ffmpeg "${ffmpegquiet[@]}" \
-        -i "$output.webm" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -i "${input_video[0]}" \
         -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
@@ -178,7 +203,9 @@ if [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     fi
 else
     if ! ffmpeg "${ffmpegquiet[@]}" \
-        -i "$output.webm" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -i "${input_video[0]}" \
         -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,subtitles=${subtitles[0]}" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
