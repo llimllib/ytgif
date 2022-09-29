@@ -7,7 +7,7 @@ set -euo pipefail
 # than version 4, because that's all I'm sure does not work. Please report
 # further version issues https://github.com/llimllib/ytgif
 if [ ! "${BASH_VERSINFO:-0}" -ge 4 ]; then
-    printf "\033[31mYour version of bash is too old, please upgrade it to run this script\033[0m\n"
+    printf "\033[31mYour version of bash (%s) is too old, please upgrade it to run this script\033[0m\n" "${BASH_VERSINFO[0]}"
     exit
 fi
 
@@ -28,6 +28,8 @@ OPTIONS
   -nosubs:        do not include subtitles in the output even if they're available
   -sub-lang lang: sub language to choose
   -autosubs:      prefer youtube's auto-generated subtitles
+  -caption text:  use a caption for the entire gif instead of subtitles
+  -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
 
 TIME
 
@@ -41,27 +43,34 @@ EXAMPLES
 
 Download the "I can't believe you've done this" clip, and turn the whole thing into "donethis.gif"
 
-  ytgif "https://www.youtube.com/watch?v=wKbU8B-QVZk" "donethis.gif"
+  ytgif "https://www.youtube.com/watch?v=wKbU8B-QVZk" donethis.gif
 
 Download the "don't call me shirley" clip from youtube, cut from 1:02 to 1:10.9 lower the fps to 10, and save it as airplane.gif:
 
   ytgif -start 1:02 -finish 1:10.9 -fps 10 \
-    "https://www.youtube.com/watch?v=ixljWVyPby0" "airplane.gif"
+    "https://www.youtube.com/watch?v=ixljWVyPby0" airplane.gif
 
 Download a bit of a linear algebra lecture, and subtitle it in spanish:
 
   ytgif -sub-lang es -start 26:54 -finish 27:02 \
-    "https://www.youtube.com/watch?v=QVKj3LADCnA" "strang.gif"
+    "https://www.youtube.com/watch?v=QVKj3LADCnA" strang.gif
 
 Create a tiny rickroll gif, optimize it, and don't include subtitles:
 
   ytgif -gifsicle -scale 30 -start 0.5 -finish 3 -nosubs \
-    "https://www.youtube.com/watch?v=dQw4w9WgXcQ" "rickroll.gif"
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ" rickroll.gif
 
 Create a gif of owen wilson saying "wow":
 
   ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
     "https://www.youtube.com/watch?v=KlLMlJ2tDkg&t=50s" wow.gif
+
+Create a gif of Gob Bluth, and manually set the caption to "I've made a huge
+mistake":
+
+  ytgif -v -start 13 -finish 17 -gifsicle -fps 10 \
+    -fontsize 40 -caption "I've made a huge mistake" \
+    "https://www.youtube.com/watch?v=GwQW3KW3DCc" mistake.gif
 
 NOTES
 
@@ -81,6 +90,8 @@ finish=()
 nosubs=
 sublang=
 subflags=(--write-subs --write-auto-subs)
+caption=
+fontsize=30
 
 # parse command line flags
 while true; do
@@ -102,6 +113,10 @@ while true; do
         shift; sublang=$1; shift
     elif [[ $1 == "-autosubs" ]]; then
         shift; subflags=(--write-auto-subs)
+    elif [[ $1 == "-caption" ]]; then
+        shift; caption=$1; shift
+    elif [[ $1 == "-fontsize" ]]; then
+        shift; fontsize=$1; shift
     elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
         usage
     else
@@ -199,17 +214,58 @@ input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
 # if we don't have any subtitles available, just encode to gif without them
-if [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
+if [ -n "$caption" ]; then
+    # to avoid the nightmare of quoting bash strings, dump the caption into a
+    # text file and use the `textfile` option to ffmpeg
+    echo "$caption" > cap.txt
+
+    if ! ffmpeg "${ffmpegquiet[@]}" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -copyts \
+        -i "${input_video[0]}" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse, \
+          drawtext=borderw=1: \
+                   bordercolor=white: \
+                   fontcolor=#111111: \
+                   fontsize=$fontsize: \
+                   x=(w-text_w)/2: \
+                   y=(h-text_h)-10: \
+                   textfile=cap.txt" \
+        "$output"; then
+        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     if ! ffmpeg "${ffmpegquiet[@]}" \
         -ss "$start_" \
         "${finish[@]}" \
         -i "${input_video[0]}" \
-        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
 else
+    # if fontsize has been set, add a "force_style" with the specified font
+    # size
+    #
+    # https://www.ffmpeg.org/ffmpeg-filters.html#subtitles-1
+    force_style=
+    if [ -n "$fontsize" ]; then
+        force_style=":force_style='FontSize=$fontsize'"
+    fi
+
     # we include -ss and finish twice because we need to tell ffmpeg to
     # properly normalize the timestamps it uses for the subtitles. Honestly I
     # just throw more and more flags at ffmpeg until something like what I want
@@ -220,7 +276,13 @@ else
         "${finish[@]}" \
         -copyts \
         -i "${input_video[0]}" \
-        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,subtitles=${subtitles[0]}" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse, \
+          subtitles=${subtitles[0]}${force_style}" \
         -ss "$start_" \
         "${finish[@]}" \
         "$output"; then
