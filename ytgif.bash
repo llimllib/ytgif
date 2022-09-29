@@ -277,7 +277,6 @@ else
     if [ -n "$fontsize" ] || [ -n "$fontcolor" ]; then
         force_style=":force_style='"
         styles=()
-        fontcolor=${fontcolor%/}
         if [ -n "$fontsize" ]; then
             styles+=("FontSize=$fontsize")
         fi
