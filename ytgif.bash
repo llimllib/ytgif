@@ -213,7 +213,7 @@ fi
 input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
-# if we don't have any subtitles available, just encode to gif without them
+# if we were given a caption, draw it and ignore any subtitles downloaded
 if [ -n "$caption" ]; then
     # to avoid the nightmare of quoting bash strings, dump the caption into a
     # text file and use the `textfile` option to ffmpeg
@@ -241,6 +241,7 @@ if [ -n "$caption" ]; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
+# if we don't have any subtitles available, just encode to gif without them
 elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     if ! ffmpeg "${ffmpegquiet[@]}" \
         -ss "$start_" \
