@@ -113,7 +113,7 @@ done
 # output more
 ffmpegquiet=(-hide_banner -loglevel error)
 ytdlpquiet=(--quiet)
-if [ -n "$verbose" ]; then
+if [ -n $verbose ]; then
     set -x
     ffmpegquiet=()
     ytdlpquiet=()
