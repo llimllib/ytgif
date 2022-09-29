@@ -7,7 +7,7 @@ set -euo pipefail
 # than version 4, because that's all I'm sure does not work. Please report
 # further version issues https://github.com/llimllib/ytgif
 if [ ! "${BASH_VERSINFO:-0}" -ge 4 ]; then
-    printf "\033[31mYour version of bash is too old, please upgrade it to run this script\033[0m\n"
+    printf "\033[31mYour version of bash (%s) is too old, please upgrade it to run this script\033[0m\n" "${BASH_VERSINFO[0]}"
     exit
 fi
 
@@ -28,7 +28,8 @@ OPTIONS
   -nosubs:        do not include subtitles in the output even if they're available
   -sub-lang lang: sub language to choose
   -autosubs:      prefer youtube's auto-generated subtitles
-  -caption:       provide a caption to use rather than subtitles
+  -caption text:  use a caption for the entire gif instead of subtitles
+  -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
 
 TIME
 
@@ -83,6 +84,7 @@ nosubs=
 sublang=
 subflags=(--write-subs --write-auto-subs)
 caption=
+fontsize=30
 
 # parse command line flags
 while true; do
@@ -106,6 +108,8 @@ while true; do
         shift; subflags=(--write-auto-subs)
     elif [[ $1 == "-caption" ]]; then
         shift; caption=$1; shift
+    elif [[ $1 == "-fontsize" ]]; then
+        shift; fontsize=$1; shift
     elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
         usage
     else
@@ -207,14 +211,25 @@ if [ -n "$caption" ]; then
     # to avoid the nightmare of quoting bash strings, dump the caption into a
     # text file and use the `textfile` option to ffmpeg
     echo "$caption" > cap.txt
+
     if ! ffmpeg "${ffmpegquiet[@]}" \
         -ss "$start_" \
         "${finish[@]}" \
         -copyts \
         -i "${input_video[0]}" \
-        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,drawtext=borderw=2:bordercolor=white:fontcolor=#111111:fontsize=40:x=(w-text_w)/2:y=(h-text_h)-10:textfile=cap.txt" \
-        -ss "$start_" \
-        "${finish[@]}" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse, \
+          drawtext=borderw=1: \
+                   bordercolor=white: \
+                   fontcolor=#111111: \
+                   fontsize=$fontsize: \
+                   x=(w-text_w)/2: \
+                   y=(h-text_h)-10: \
+                   textfile=cap.txt" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
@@ -224,12 +239,26 @@ elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         -ss "$start_" \
         "${finish[@]}" \
         -i "${input_video[0]}" \
-        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
 else
+    # if fontsize has been set, add a "force_style" with the specified font
+    # size
+    #
+    # https://www.ffmpeg.org/ffmpeg-filters.html#subtitles-1
+    force_style=
+    if [ -n "$fontsize" ]; then
+        force_style=":force_style='FontSize=$fontsize'"
+    fi
+
     # we include -ss and finish twice because we need to tell ffmpeg to
     # properly normalize the timestamps it uses for the subtitles. Honestly I
     # just throw more and more flags at ffmpeg until something like what I want
@@ -240,7 +269,13 @@ else
         "${finish[@]}" \
         -copyts \
         -i "${input_video[0]}" \
-        -filter_complex "[0:v] fps=$fps,scale=$scale:-1,split [a][b];[a] palettegen [p];[b][p] paletteuse,subtitles=${subtitles[0]}" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse, \
+          subtitles=${subtitles[0]}${force_style}" \
         -ss "$start_" \
         "${finish[@]}" \
         "$output"; then
