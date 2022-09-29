@@ -29,7 +29,8 @@ OPTIONS
   -sub-lang lang: sub language to choose
   -autosubs:      prefer youtube's auto-generated subtitles
   -caption text:  use a caption for the entire gif instead of subtitles
-  -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
+  -fontsize:      the font size for the caption or subtitle. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
+  -fontcolor:     the color to use for the caption or subtitle font. Default #111111
 
 TIME
 
@@ -91,7 +92,8 @@ nosubs=
 sublang=
 subflags=(--write-subs --write-auto-subs)
 caption=
-fontsize=30
+fontsize=
+fontcolor="#111111"
 
 # parse command line flags
 while true; do
@@ -117,6 +119,8 @@ while true; do
         shift; caption=$1; shift
     elif [[ $1 == "-fontsize" ]]; then
         shift; fontsize=$1; shift
+    elif [[ $1 == "-fontcolor" ]]; then
+        shift; fontcolor=$1; shift
     elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
         usage
     else
@@ -209,6 +213,12 @@ if [ ${#input_video[@]} -eq 0 ]; then
     fi
 fi
 
+function join {
+    local IFS="$1"
+    shift
+    echo "$*"
+}
+
 # evaluate the glob to get the input video and subtitle files
 input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
@@ -232,8 +242,8 @@ if [ -n "$caption" ]; then
           [b][p] paletteuse, \
           drawtext=borderw=1: \
                    bordercolor=white: \
-                   fontcolor=#111111: \
-                   fontsize=$fontsize: \
+                   fontcolor=${fontcolor}: \
+                   fontsize=${fontsize-30}: \
                    x=(w-text_w)/2: \
                    y=(h-text_h)-10: \
                    textfile=cap.txt" \
@@ -258,13 +268,28 @@ elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         exit 1
     fi
 else
-    # if fontsize has been set, add a "force_style" with the specified font
-    # size
+    # if font options have been set, construct a "force_style" argument with
+    # ASS format specifiers
     #
     # https://www.ffmpeg.org/ffmpeg-filters.html#subtitles-1
+    # ASS format spec: http://www.tcax.org/docs/ass-specs.htm
     force_style=
-    if [ -n "$fontsize" ]; then
-        force_style=":force_style='FontSize=$fontsize'"
+    if [ -n "$fontsize" ] || [ -n "$fontcolor" ]; then
+        force_style=":force_style='"
+        styles=()
+        fontcolor=${fontcolor%/}
+        if [ -n "$fontsize" ]; then
+            styles+=("FontSize=$fontsize")
+        fi
+        if [ -n "$fontcolor" ]; then
+            # the goofy-looking ### means "strip a leading hash character if
+            # present"
+            # https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion
+
+            # XXX TODO: ASS format specifies RRGGBB instead of BBGGRR, so we need to split the string and reverse the R and B
+            styles+=("PrimaryColour=&H${fontcolor###}&")
+        fi
+        force_style="$force_style$(join , "${styles[@]}")'"
     fi
 
     # we include -ss and finish twice because we need to tell ffmpeg to
