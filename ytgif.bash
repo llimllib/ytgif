@@ -73,6 +73,13 @@ mistake":
     -fontsize 40 -caption "I've made a huge mistake" \
     "https://www.youtube.com/watch?v=GwQW3KW3DCc" mistake.gif
 
+Create a gif of the "flames, flames" scene from Clue and make the captions red and larger:
+
+  # TODO deleteme need to get the colors swapped
+
+  ytgif -v -start 1:57 -finish 2:00 -fps 10 -fontcolor "#ee0000" -fontsize 30 \
+    "https://www.youtube.com/watch?v=nrqxmQr-uto" "flames.gif"
+
 NOTES
 
 - Be careful to quote the youtube URL, if it contains the & character it will not work unless quoted
