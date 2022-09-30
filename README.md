@@ -17,7 +17,7 @@ ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
 
 ```
 -v:             print more verbose output
--scale n:       scale the video's with to n pixels [default 640]
+-scale n:       scale the video's width to n pixels [default 640]
 -fps n:         set the fps of the output gif [default 20]
 -gifsicle:      post-process the image with `gifsicle -O2`
 -start time:    the time to start the video at
