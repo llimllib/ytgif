@@ -15,3 +15,11 @@ ytgif -v -start 1:02 -finish 1:11 -fps 10 "https://www.youtube.com/watch?v=ixljW
 ```
 
 ![](gifs/airplane.gif)
+
+```
+ytgif -start 2:42 -finish 2:45.5 -fontsize 25 \
+  -caption "we'll bless 'em all until we get fershnickered" \
+  https://www.youtube.com/watch?v=k4v8BVKlAfM drunk.gif
+```
+
+![](gifs/drunk.gif)
