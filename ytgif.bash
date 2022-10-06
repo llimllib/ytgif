@@ -95,33 +95,54 @@ fontsize=30
 
 # parse command line flags
 while true; do
-    if [[ $1 == "-v" ]]; then
-        shift; verbose=true
-    elif [[ $1 == "-gifsicle" ]]; then
-        shift; gifsicle=true
-    elif [[ $1 == "-scale" ]]; then
-        shift; scale=$1; shift
-    elif [[ $1 == "-fps" ]]; then
-        shift; fps=$1; shift
-    elif [[ $1 == "-start" ]]; then
-        shift; start_=$1; shift
-    elif [[ $1 == "-finish" ]]; then
-        shift; finish=(-to "$1"); shift
-    elif [[ $1 == "-nosubs" ]]; then
-        shift; nosubs=true
-    elif [[ $1 == "-sub-lang" ]]; then
-        shift; sublang=$1; shift
-    elif [[ $1 == "-autosubs" ]]; then
-        shift; subflags=(--write-auto-subs)
-    elif [[ $1 == "-caption" ]]; then
-        shift; caption=$1; shift
-    elif [[ $1 == "-fontsize" ]]; then
-        shift; fontsize=$1; shift
-    elif [[ $1 == "help" || $1 == "-h" || $1 == "--help" ]]; then
-        usage
-    else
-        break
-    fi
+    case $1 in
+        -v)
+            verbose=true
+            shift
+        ;;
+        -gifsicle)
+            gifsicle=true
+            shift
+        ;;
+        -scale)
+            scale=$2
+            shift 2
+        ;;
+        -fps)
+            fps=$2
+            shift 2
+        ;;
+        -start)
+            start_=$2
+            shift 2
+        ;;
+        -finish)
+            finish=(-to "$2")
+            shift 2
+        ;;
+        -sub-lang)
+            sublang=$2
+            shift 2
+        ;;
+        -autosubs)
+            subflags=(--write-auto-subs)
+            shift
+        ;;
+        -caption)
+            caption=$2
+            shift 2
+        ;;
+        -fontsize)
+            fontsize=$2
+            shift 2
+        ;;
+        help|-h|--help)
+            usage
+        ;;
+        *)
+            break
+        ;;
+    esac
 done
 
 # if the -v flag has been set, show the commands we're running and let ffmpeg
@@ -231,8 +252,8 @@ if [ -n "$caption" ]; then
           [a] palettegen [p], \
           [b][p] paletteuse, \
           drawtext=borderw=1: \
-                   bordercolor=white: \
-                   fontcolor=#111111: \
+                   bordercolor=black: \
+                   fontcolor=white: \
                    fontsize=$fontsize: \
                    x=(w-text_w)/2: \
                    y=(h-text_h)-10: \
