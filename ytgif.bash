@@ -279,8 +279,8 @@ if [ -n "$whisper" ]; then
     if ! ffmpeg -y "${ffmpegquiet[@]}" \
         -ss "$start_" \
         "${finish[@]}" \
-        -copyts \
         -i "${input_video[0]}" \
+        -c copy -copyts \
         "$clipfile"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
