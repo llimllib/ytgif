@@ -30,6 +30,7 @@ OPTIONS
   -autosubs:      prefer youtube's auto-generated subtitles
   -caption text:  use a caption for the entire gif instead of subtitles
   -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
+  -whisper:       use OpenAI's `whisper` to generate captions
 
 TIME
 
@@ -38,6 +39,10 @@ TIME
 INSTALLING
 
   copy ytgif.bash to somewhere on your $PATH and rename it `ytgif`
+
+WHISPER
+
+  For instructions on installing OpenAI whisper, go to https://github.com/openai/whisper#setup
 
 EXAMPLES
 
@@ -72,11 +77,17 @@ mistake":
     -fontsize 40 -caption "I've made a huge mistake" \
     "https://www.youtube.com/watch?v=GwQW3KW3DCc" mistake.gif
 
+Create a gif of Dr. Frankenstein, and use OpenAI whisper to caption it
+
+  ytgif -start 49 -finish 55.5 -whisper \
+    https://www.youtube.com/watch?v=WamF64GFPzg frankenstein.gif
+
 NOTES
 
 - Be careful to quote the youtube URL, if it contains the & character it will not work unless quoted
 - ytgif caches downloaded videos in `/tmp/ytgif_cache`, so you can quickly try edits to the gif without re-downloading videos. These can be quite large, so you may want to clear that folder when you're done making a gif
 - youtube's auto subtitles are far from perfect, but often better than nothing
+- generating a gif using OpenAI whisper is a bit slow, be patient
 EOF
         exit 1
 }
@@ -92,6 +103,8 @@ sublang=
 subflags=(--write-subs --write-auto-subs)
 caption=
 fontsize=30
+custom_fontsize=
+whisper=
 
 # parse command line flags
 while true; do
@@ -134,7 +147,12 @@ while true; do
         ;;
         -fontsize)
             fontsize=$2
+            custom_fontsize="true"
             shift 2
+        ;;
+        -whisper)
+            whisper="true"
+            shift
         ;;
         help|-h|--help)
             usage
@@ -179,6 +197,13 @@ if [ -n "$gifsicle" ]; then
         usage
     fi
 fi
+if [ -n "$whisper" ]; then
+    if ! command -v whisper &> /dev/null
+    then
+        printf "\033[31mYou must install whisper\033[0m: https://github.com/openai/whisper\n\n"
+        usage
+    fi
+fi
 
 # there should be two arguments remaining: the youtube URL and the output file name
 if [ $# -lt 2 ]; then
@@ -217,7 +242,19 @@ ytdl_sub_outfile="$ytgif_cache_folder/sub_$yturl_clean"
 
 # check for cached video; if one does not exist, download the video
 input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
-if [ ${#input_video[@]} -eq 0 ]; then
+# If the -whsiper flag was given, we'll want to download the video with the audio
+if [ -n "$whisper" ]; then
+    if ! yt-dlp \
+        "${ytdlpquiet[@]}" \
+        "${sublangs[@]}" \
+        "${subflags[@]}" \
+        -o "$ytdl_video_outfile" \
+        "$yturl"; then
+        printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+# otherwise, if the video has not already been downloaded, download it
+elif [ ${#input_video[@]} -eq 0 ]; then
     if ! yt-dlp -f bv \
         "${ytdlpquiet[@]}" \
         "${sublangs[@]}" \
@@ -235,7 +272,53 @@ input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
 # if we were given a caption, draw it and ignore any subtitles downloaded
-if [ -n "$caption" ]; then
+if [ -n "$whisper" ]; then
+    # Before we run whisper, we have to clip the video to the part we want
+    ext=${input_video##*.}
+    clipfile="$ytgif_cache_folder/clip_$yturl_clean.$ext"
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -copyts \
+        -i "${input_video[0]}" \
+        "$clipfile"; then
+        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+
+    # now run whisper to extract the subtitles
+    if ! whisper "$clipfile" -o "$ytgif_cache_folder" ; then
+        printf "\033[31mfailed running whisper\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+
+    subtitle="$clipfile.srt"
+
+    # if fontsize has been set, add a "force_style" with the specified font
+    # size
+    #
+    # https://www.ffmpeg.org/ffmpeg-filters.html#subtitles-1
+    force_style=
+    if [ -n "$custom_fontsize" ] && [ -n "$fontsize" ]; then
+        force_style=":force_style='FontSize=$fontsize'"
+    fi
+
+    # convert the clipfile to a gif, using the subtitles we created with
+    # whisper
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
+        -i "$clipfile" \
+        -filter_complex "\
+          [0:v] fps=$fps, \
+          scale=$scale:-1, \
+          split [a][b], \
+          [a] palettegen [p], \
+          [b][p] paletteuse, \
+          subtitles=$subtitle${force_style}" \
+        "$output"; then
+        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
+elif [ -n "$caption" ]; then
     # to avoid the nightmare of quoting bash strings, dump the caption into a
     # text file and use the `textfile` option to ffmpeg
     echo "$caption" > cap.txt
@@ -284,7 +367,7 @@ else
     #
     # https://www.ffmpeg.org/ffmpeg-filters.html#subtitles-1
     force_style=
-    if [ -n "$fontsize" ]; then
+    if [ -n "$custom_fontsize" ] && [ -n "$fontsize" ]; then
         force_style=":force_style='FontSize=$fontsize'"
     fi
 

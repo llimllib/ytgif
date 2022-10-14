@@ -23,3 +23,10 @@ ytgif -start 2:42 -finish 2:45.5 -fontsize 25 \
 ```
 
 ![](gifs/drunk.gif)
+
+```
+ytgif -start 49 -finish 55.5 -whisper \
+  https://www.youtube.com/watch?v=WamF64GFPzg frankenstein.gif
+```
+
+![](gifs/frankenstein.gif)

@@ -28,6 +28,7 @@ ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
 -caption text:  use a caption for the entire gif instead of subtitles
 -fontsize:      the font size for the caption. Defaults to 30 if caption set,
                 otherwise to whatever ffmpeg defaults it to
+-whisper:       use OpenAI's `whisper` to generate captions
 ```
 
 ## PREREQUISITES
@@ -36,7 +37,11 @@ This script is written for modern bash, and won't work on the ancient bash that 
 
 This script requires [`ffmpeg`](https://ffmpeg.org/) and [`yt-dlp`](https://github.com/yt-dlp/yt-dlp).
 
-[`gifsicle`](https://www.lcdf.org/gifsicle/) is an optional dependency.
+- [`gifsicle`](https://www.lcdf.org/gifsicle/) is an optional dependency
+  - it's used for optimizing gifs as a final pass
+- [`whisper`](https://github.com/openai/whisper#setup) is an optional dependency
+  - it's used for generating subtitles for a video that doesn't have them
+  - it often does a much better job than youtube, but it is a bit slow to use.
 
 This script has only been tested on a mac, where `brew install bash ffmpeg yt-dlp gifsicle` should work to get your dependencies in order. Please report bugs if it fails on other platforms.
 
