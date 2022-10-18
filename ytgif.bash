@@ -137,6 +137,10 @@ while true; do
             sublang=$2
             shift 2
         ;;
+        -nosubs)
+            nosubs="true"
+            shift
+        ;;
         -autosubs)
             subflags=(--write-auto-subs)
             shift
