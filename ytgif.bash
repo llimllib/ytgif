@@ -31,6 +31,7 @@ OPTIONS
   -caption text:  use a caption for the entire gif instead of subtitles
   -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
   -whisper:       use OpenAI's `whisper` to generate captions
+  -whisper-large: use whisper's "large" model instead of its medium one. May download a large model file
 
 TIME
 
@@ -101,10 +102,12 @@ finish=()
 nosubs=
 sublang=
 subflags=(--write-subs --write-auto-subs)
+audiorequired=
 caption=
 fontsize=30
 custom_fontsize=
 whisper=
+whisper_options=()
 
 # parse command line flags
 while true; do
@@ -138,6 +141,7 @@ while true; do
             shift 2
         ;;
         -nosubs)
+            subflags=(--no-write-subs)
             nosubs="true"
             shift
         ;;
@@ -155,7 +159,14 @@ while true; do
             shift 2
         ;;
         -whisper)
+            audiorequired="true"
             whisper="true"
+            shift
+        ;;
+        -whisper-large)
+            audiorequired="true"
+            whisper="true"
+            whisper_options=(--model large)
             shift
         ;;
         help|-h|--help)
@@ -235,6 +246,16 @@ fi
 # https://unix.stackexchange.com/a/34012
 shopt -s nullglob
 
+###########################
+# Step 1: download.
+#
+# - download the video into a file called video_<youtube_url>.ext
+#   - ext is *usually* webm but we can't be sure
+# - download the audio if necessary
+# - right now we don't explicitly check for the subs file and download it if we
+#   need it - clear your cache if you need this. Sorry
+###########################
+
 # sanitize string to use it as our cache key - keep only ascii a-zA-Z0-9
 yturl_clean=${yturl//[^a-zA-Z0-9]/}
 
@@ -246,19 +267,7 @@ ytdl_sub_outfile="$ytgif_cache_folder/sub_$yturl_clean"
 
 # check for cached video; if one does not exist, download the video
 input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
-# If the -whsiper flag was given, we'll want to download the video with the audio
-if [ -n "$whisper" ]; then
-    if ! yt-dlp \
-        "${ytdlpquiet[@]}" \
-        "${sublangs[@]}" \
-        "${subflags[@]}" \
-        -o "$ytdl_video_outfile" \
-        "$yturl"; then
-        printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
-        exit 1
-    fi
-# otherwise, if the video has not already been downloaded, download it
-elif [ ${#input_video[@]} -eq 0 ]; then
+if [ ${#input_video[@]} -eq 0 ]; then
     if ! yt-dlp -f bv \
         "${ytdlpquiet[@]}" \
         "${sublangs[@]}" \
@@ -271,32 +280,82 @@ elif [ ${#input_video[@]} -eq 0 ]; then
     fi
 fi
 
-# evaluate the glob to get the input video and subtitle files
-input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
-subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
+# if $audiorequired is false, this variable will go unused
+ytdl_audio_outfile="$ytgif_cache_folder/audio_$yturl_clean.%(ext)s"
 
-# if we were given a caption, draw it and ignore any subtitles downloaded
-if [ -n "$whisper" ]; then
-    # Before we run whisper, we have to clip the video to the part we want
-    ext=${input_video##*.}
-    clipfile="$ytgif_cache_folder/clip_$yturl_clean.$ext"
-    if ! ffmpeg -y "${ffmpegquiet[@]}" \
-        -ss "$start_" \
-        "${finish[@]}" \
-        -i "${input_video[0]}" \
-        -c copy -copyts \
-        "$clipfile"; then
-        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+# check for cached audio; if one does not exist, download the audio
+input_audio=("$ytgif_cache_folder/audio_$yturl_clean".*)
+if [ -n "$audiorequired" ] && [ ${#input_audio[@]} -eq 0 ]; then
+    if ! yt-dlp -f ba \
+        "${ytdlpquiet[@]}" \
+        "${sublangs[@]}" \
+        "${subflags[@]}" \
+        -o "$ytdl_audio_outfile" \
+        "$yturl"; then
+        printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
+fi
 
-    # now run whisper to extract the subtitles
-    if ! whisper "$clipfile" -o "$ytgif_cache_folder" ; then
+# evaluate the glob to get the input video, audio, and subtitle files
+input_video=("$ytgif_cache_folder/video_$yturl_clean".*)
+input_audio=("$ytgif_cache_folder/audio_$yturl_clean".*)
+subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
+
+if [ -n "$verbose" ]; then
+    printf "⚠️ input_video: %s\n⚠️ subtitles: %s\n⚠️ audio: %s" "${input_video[@]}" "${subtitles[@]}" "${input_audio[@]}"
+fi
+
+###########################
+# Step 2: clip files
+# - clip the video file to the specified timing and save it as vclip_<youtube_url>.ext
+# - if present, clip the audio file too and save as aclip_<youtube_url>.ext
+###########################
+ext=${input_video##*.}
+vclipfile="$ytgif_cache_folder/vclip_$yturl_clean.$ext"
+if ! ffmpeg -y "${ffmpegquiet[@]}" \
+    -ss "$start_" \
+    "${finish[@]}" \
+    -i "${input_video[0]}" \
+    -c copy -copyts \
+    -ss "$start_" \
+    "${finish[@]}" \
+    "$vclipfile"; then
+    printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+    exit 1
+fi
+
+ext=${input_audio##*.}
+aclipfile="$ytgif_cache_folder/aclip_$yturl_clean.$ext"
+# if we don't include the duplicate start and finish here, we get a clip that
+# is clipped properly but the timing is wrong, it doesn't trim the start time
+# of the file for reasons that are not clear to me
+if ! ffmpeg -y "${ffmpegquiet[@]}" \
+    -ss "$start_" \
+    "${finish[@]}" \
+    -i "${input_audio[0]}" \
+    -c copy -copyts \
+    -ss "$start_" \
+    "${finish[@]}" \
+    "$aclipfile"; then
+    printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+    exit 1
+fi
+
+###########################
+# Step 3: create output file
+###########################
+if [ -n "$whisper" ]; then
+    # run whisper to extract the subtitles
+    # add --model large to run the biggest model
+    # TODO: add option to use model size
+    # if ! whisper "$aclipfile" -o "$ytgif_cache_folder" ; then
+    if ! whisper "${whisper_options[@]}" "$aclipfile" -o "$ytgif_cache_folder" ; then
         printf "\033[31mfailed running whisper\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
 
-    subtitle="$clipfile.srt"
+    subtitle="$aclipfile.srt"
 
     # if fontsize has been set, add a "force_style" with the specified font
     # size
@@ -310,7 +369,7 @@ if [ -n "$whisper" ]; then
     # convert the clipfile to a gif, using the subtitles we created with
     # whisper
     if ! ffmpeg -y "${ffmpegquiet[@]}" \
-        -i "$clipfile" \
+        -i "$vclipfile" \
         -filter_complex "\
           [0:v] fps=$fps, \
           scale=$scale:-1, \
@@ -323,15 +382,14 @@ if [ -n "$whisper" ]; then
         exit 1
     fi
 elif [ -n "$caption" ]; then
+    caption_file="$ytgif_cache_folder/caption_$yturl_clean"
+
     # to avoid the nightmare of quoting bash strings, dump the caption into a
     # text file and use the `textfile` option to ffmpeg
-    echo "$caption" > cap.txt
+    echo "$caption" > "$caption_file"
 
     if ! ffmpeg "${ffmpegquiet[@]}" \
-        -ss "$start_" \
-        "${finish[@]}" \
-        -copyts \
-        -i "${input_video[0]}" \
+        -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
           scale=$scale:-1, \
@@ -344,7 +402,7 @@ elif [ -n "$caption" ]; then
                    fontsize=$fontsize: \
                    x=(w-text_w)/2: \
                    y=(h-text_h)-10: \
-                   textfile=cap.txt" \
+                   textfile=$caption_file" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
@@ -352,9 +410,7 @@ elif [ -n "$caption" ]; then
 # if we don't have any subtitles available, just encode to gif without them
 elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
     if ! ffmpeg "${ffmpegquiet[@]}" \
-        -ss "$start_" \
-        "${finish[@]}" \
-        -i "${input_video[0]}" \
+        -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
           scale=$scale:-1, \
@@ -365,6 +421,7 @@ elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
+# we have a subtitle file downloaded from youtube
 else
     # if fontsize has been set, add a "force_style" with the specified font
     # size
@@ -381,10 +438,7 @@ else
     # comes out the other side
     # see https://video.stackexchange.com/a/30046
     if ! ffmpeg "${ffmpegquiet[@]}" \
-        -ss "$start_" \
-        "${finish[@]}" \
-        -copyts \
-        -i "${input_video[0]}" \
+        -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
           scale=$scale:-1, \
@@ -392,14 +446,15 @@ else
           [a] palettegen [p], \
           [b][p] paletteuse, \
           subtitles=${subtitles[0]}${force_style}" \
-        -ss "$start_" \
-        "${finish[@]}" \
         "$output"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
 fi
 
+###########################
+# Step 3: optimize the file if requested
+###########################
 if [ -n "$gifsicle" ]; then
     if ! gifsicle --batch -O2 "$output"; then
         printf "\033[31mfailed running gifsicle\033[0m\nre-running with -v may show why\n"
