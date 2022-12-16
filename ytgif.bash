@@ -228,14 +228,6 @@ fi
 yturl=$1
 output=$2
 
-CUR=$(pwd)
-TMP=$(mktemp -d -t "$output")
-cd "$TMP"
-function finish {
-    cd - > /dev/null
-}
-trap finish EXIT
-
 ytgif_cache_folder="/tmp/ytgif_cache"
 if [ ! -d $ytgif_cache_folder ]; then
     mkdir $ytgif_cache_folder
@@ -462,6 +454,4 @@ if [ -n "$gifsicle" ]; then
     fi
 fi
 
-cp "$output" "$CUR/"
-
-echo "created $CUR/$output"
+echo "created $output"
