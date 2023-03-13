@@ -83,3 +83,11 @@ ytgif -v -start 1:58 -finish 1:59.9 -caption "damn you" \
 ```
 
 ![](gifs/drunk.gif)
+
+```sh
+ytgif -start 13 -finish 17 -fontsize 40 \
+    -caption "I've made a huge mistake" \
+    'https://www.youtube.com/watch?v=GwQW3KW3DCc' mistake.gif
+```
+
+![](gifs/mistake.gif)
