@@ -75,3 +75,11 @@ ytgif -v -start 1:58 -finish 1:59.9 -caption "damn you" \
 ```
 
 ![](gifs/catapult.gif)
+
+```sh
+./ytgif.bash -start 2:42 -finish 2:45.5 -fontsize 25 \
+    -caption "we'll bless 'em all until we get fershnickered" \
+    'https://www.youtube.com/watch?v=k4v8BVKlAfM' drunk.gif
+```
+
+![](gifs/drunk.gif)
