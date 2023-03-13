@@ -109,6 +109,10 @@ custom_fontsize=
 whisper=
 whisper_options=()
 
+if [ -z "${1:-}" ]; then
+    usage
+fi
+
 # parse command line flags
 while true; do
     case $1 in
@@ -317,21 +321,23 @@ if ! ffmpeg -y "${ffmpegquiet[@]}" \
     exit 1
 fi
 
-ext=${input_audio##*.}
-aclipfile="$ytgif_cache_folder/aclip_$yturl_clean.$ext"
-# if we don't include the duplicate start and finish here, we get a clip that
-# is clipped properly but the timing is wrong, it doesn't trim the start time
-# of the file for reasons that are not clear to me
-if ! ffmpeg -y "${ffmpegquiet[@]}" \
-    -ss "$start_" \
-    "${finish[@]}" \
-    -i "${input_audio[0]}" \
-    -c copy -copyts \
-    -ss "$start_" \
-    "${finish[@]}" \
-    "$aclipfile"; then
-    printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
-    exit 1
+if [ -n "$audiorequired" ]; then
+    ext=${input_audio##*.}
+    aclipfile="$ytgif_cache_folder/aclip_$yturl_clean.$ext"
+    # if we don't include the duplicate start and finish here, we get a clip that
+    # is clipped properly but the timing is wrong, it doesn't trim the start time
+    # of the file for reasons that are not clear to me
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
+        -ss "$start_" \
+        "${finish[@]}" \
+        -i "${input_audio[0]}" \
+        -c copy -copyts \
+        -ss "$start_" \
+        "${finish[@]}" \
+        "$aclipfile"; then
+        printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
+        exit 1
+    fi
 fi
 
 ###########################
