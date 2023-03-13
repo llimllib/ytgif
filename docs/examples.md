@@ -30,3 +30,26 @@ ytgif -start 49 -finish 55.5 -whisper \
 ```
 
 ![](gifs/frankenstein.gif)
+
+```
+ytgif -v -start 0:20.2 -finish 0:23.9 -caption "say Hello to my Little Friend" \
+    'https://www.youtube.com/watch?v=a_z4IuxAqpE' hello.gif
+```
+
+![](gifs/hello.gif)
+
+```
+ytgif -v -start 1:58 -finish 1:59.9 -caption "damn you" \
+    'https://www.youtube.com/watch?v=tskpXGAJMhw' damn.gif
+```
+
+![](gifs/damn.gif)
+
+```
+./ytgif.bash -start 0:10 -finish 0:14 \
+    -caption 'one of the new cover sheets on your TPS report' \
+    -fontsize 20 \
+    'https://www.youtube.com/watch?v=jsLUidiYm0w' tps.gif
+```
+
+![](gifs/tps.gif)
