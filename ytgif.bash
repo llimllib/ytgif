@@ -306,14 +306,15 @@ fi
 # Step 2: clip files
 # - clip the video file to the specified timing and save it as vclip_<youtube_url>.ext
 # - if present, clip the audio file too and save as aclip_<youtube_url>.ext
+#
+# I have been unable to get accurate seeking unless I re-encode the files, so I
+# do not have -c copy set. This goes slowly and kind of sucks, but sometimes so
+# does life I guess
 ###########################
 ext=${input_video##*.}
 vclipfile="$ytgif_cache_folder/vclip_$yturl_clean.$ext"
 if ! ffmpeg -y "${ffmpegquiet[@]}" \
-    -ss "$start_" \
-    "${finish[@]}" \
     -i "${input_video[0]}" \
-    -c copy -copyts \
     -ss "$start_" \
     "${finish[@]}" \
     "$vclipfile"; then
@@ -328,10 +329,7 @@ if [ -n "$audiorequired" ]; then
     # is clipped properly but the timing is wrong, it doesn't trim the start time
     # of the file for reasons that are not clear to me
     if ! ffmpeg -y "${ffmpegquiet[@]}" \
-        -ss "$start_" \
-        "${finish[@]}" \
         -i "${input_audio[0]}" \
-        -c copy -copyts \
         -ss "$start_" \
         "${finish[@]}" \
         "$aclipfile"; then
@@ -386,7 +384,7 @@ elif [ -n "$caption" ]; then
     # text file and use the `textfile` option to ffmpeg
     echo "$caption" > "$caption_file"
 
-    if ! ffmpeg "${ffmpegquiet[@]}" \
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
@@ -407,7 +405,7 @@ elif [ -n "$caption" ]; then
     fi
 # if we don't have any subtitles available, just encode to gif without them
 elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
-    if ! ffmpeg "${ffmpegquiet[@]}" \
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
@@ -435,7 +433,7 @@ else
     # just throw more and more flags at ffmpeg until something like what I want
     # comes out the other side
     # see https://video.stackexchange.com/a/30046
-    if ! ffmpeg "${ffmpegquiet[@]}" \
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
