@@ -66,3 +66,12 @@ ytgif -v -start 1:58 -finish 1:59.9 -caption "damn you" \
 ```
 
 ![](gifs/bicker.gif)
+
+```sh
+./ytgif.bash -whisper-large -start 19 -finish 27 \
+    -scale 500 \
+    -gifsicle \
+    'https://www.youtube.com/watch?v=UQ26GjG69fk' catapult.gif
+```
+
+![](gifs/catapult.gif)
