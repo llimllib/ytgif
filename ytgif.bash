@@ -83,6 +83,8 @@ Create a gif of Dr. Frankenstein, and use OpenAI whisper to caption it
   ytgif -start 49 -finish 55.5 -whisper \
     https://www.youtube.com/watch?v=WamF64GFPzg frankenstein.gif
 
+See more examples here: https://github.com/llimllib/ytgif/blob/main/docs/examples.md
+
 NOTES
 
 - Be careful to quote the youtube URL, if it contains the & character it will not work unless quoted
