@@ -81,6 +81,8 @@ mistake":
      -fontsize 40 -caption "I've made a huge mistake" \
      "https://www.youtube.com/watch?v=GwQW3KW3DCc" mistake.gif
 
+See more examples here: https://github.com/llimllib/ytgif/blob/main/docs/examples.md
+
 ## NOTES
 
 - Be careful to quote the youtube URL, if it contains the & character it will not work unless quoted
