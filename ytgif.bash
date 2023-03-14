@@ -299,7 +299,7 @@ input_audio=("$ytgif_cache_folder/audio_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
 if [ -n "$verbose" ]; then
-    printf "⚠️  input_video: %s\n⚠️  subtitles: %s\n⚠️  audio: %s" "${input_video[@]}" "${subtitles[@]}" "${input_audio[@]}"
+    printf "\n⚠️  input_video: %s\n⚠️  subtitles: %s\n⚠️  audio: %s\n\n" "${input_video[@]}" "${subtitles[@]}" "${input_audio[@]}"
 fi
 
 ###########################
@@ -346,12 +346,15 @@ if [ -n "$whisper" ]; then
     # add --model large to run the biggest model
     # TODO: add option to use model size
     # if ! whisper "$aclipfile" -o "$ytgif_cache_folder" ; then
-    if ! whisper "${whisper_options[@]}" "$aclipfile" -o "$ytgif_cache_folder" ; then
+    if ! whisper "${whisper_options[@]}" \
+        "$aclipfile" \
+        -o "$ytgif_cache_folder" \
+        --output_format srt ; then
         printf "\033[31mfailed running whisper\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
 
-    subtitle="$aclipfile.srt"
+    subtitle="$ytgif_cache_folder/aclip_$yturl_clean.srt"
 
     # if fontsize has been set, add a "force_style" with the specified font
     # size
