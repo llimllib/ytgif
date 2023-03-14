@@ -286,8 +286,6 @@ input_audio=("$ytgif_cache_folder/audio_$yturl_clean".*)
 if [ -n "$audiorequired" ] && [ ${#input_audio[@]} -eq 0 ]; then
     if ! yt-dlp -f ba \
         "${ytdlpquiet[@]}" \
-        "${sublangs[@]}" \
-        "${subflags[@]}" \
         -o "$ytdl_audio_outfile" \
         "$yturl"; then
         printf "\033[31mfailed running yt-dlp\033[0m\nre-running with -v may show why\n"
@@ -301,7 +299,7 @@ input_audio=("$ytgif_cache_folder/audio_$yturl_clean".*)
 subtitles=("$ytgif_cache_folder/sub_$yturl_clean."*)
 
 if [ -n "$verbose" ]; then
-    printf "⚠️ input_video: %s\n⚠️ subtitles: %s\n⚠️ audio: %s" "${input_video[@]}" "${subtitles[@]}" "${input_audio[@]}"
+    printf "⚠️  input_video: %s\n⚠️  subtitles: %s\n⚠️  audio: %s" "${input_video[@]}" "${subtitles[@]}" "${input_audio[@]}"
 fi
 
 ###########################
