@@ -20,6 +20,7 @@ Download the video named in youtube-url and create a gif of it. Will embed the a
 OPTIONS
 
   -v:             print more verbose output
+  -trimborders    automatically trim letterbox borders
   -scale n:       scale the video's width to n pixels [default 640]
   -fps n:         set the fps of the output gif [default 20]
   -gifsicle:      post-process the image with `gifsicle -O2`
@@ -110,6 +111,7 @@ fontsize=30
 custom_fontsize=
 whisper=
 whisper_options=()
+trimborders=
 
 if [ -z "${1:-}" ]; then
     usage
@@ -173,6 +175,10 @@ while true; do
             audiorequired="true"
             whisper="true"
             whisper_options=(--model large)
+            shift
+        ;;
+        -trimborders)
+            trimborders="true"
             shift
         ;;
         help|-h|--help)
@@ -245,7 +251,7 @@ fi
 shopt -s nullglob
 
 ###########################
-# Step 1: download.
+# download.
 #
 # - download the video into a file called video_<youtube_url>.ext
 #   - ext is *usually* webm but we can't be sure
@@ -303,7 +309,7 @@ if [ -n "$verbose" ]; then
 fi
 
 ###########################
-# Step 2: clip files
+# clip files
 # - clip the video file to the specified timing and save it as vclip_<youtube_url>.ext
 # - if present, clip the audio file too and save as aclip_<youtube_url>.ext
 #
@@ -339,7 +345,23 @@ if [ -n "$audiorequired" ]; then
 fi
 
 ###########################
-# Step 3: create output file
+# detect crop parameters if requested
+###########################
+
+crop=
+if [ -n "$trimborders" ]; then
+    # use the 'cropdetect' filter to give us a crop parameter for future use in
+    # a filter chain. Give it a trailing comma so that it can be used in the chain
+    crop="$(ffmpeg -ss 0 -i "$vclipfile" \
+                    -vframes 2 \
+                    -vf cropdetect \
+                    -f null - 2>&1 |
+                    awk '/crop/ { print $NF }' |
+                    head -n1),"
+fi
+
+###########################
+# create output file
 ###########################
 if [ -n "$whisper" ]; then
     # run whisper to extract the subtitles
@@ -371,6 +393,7 @@ if [ -n "$whisper" ]; then
         -i "$vclipfile" \
         -filter_complex "\
           [0:v] fps=$fps, \
+          $crop \
           scale=$scale:-1, \
           split [a][b], \
           [a] palettegen [p], \
@@ -391,6 +414,7 @@ elif [ -n "$caption" ]; then
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
+          $crop \
           scale=$scale:-1, \
           split [a][b], \
           [a] palettegen [p], \
@@ -412,6 +436,7 @@ elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
+          $crop \
           scale=$scale:-1, \
           split [a][b], \
           [a] palettegen [p], \
@@ -440,6 +465,7 @@ else
         -i "${vclipfile}" \
         -filter_complex "\
           [0:v] fps=$fps, \
+          $crop \
           scale=$scale:-1, \
           split [a][b], \
           [a] palettegen [p], \
