@@ -91,3 +91,10 @@ ytgif -start 13 -finish 17 -fontsize 40 \
 ```
 
 ![](gifs/mistake.gif)
+
+```sh
+ytgif -start 1:42.5 -finish 1:48.5 -trimborders -whisper-large \
+    'https://www.youtube.com/watch?v=ZTT1qUswYL0' illinois_nazis.gif
+```
+
+![](gifs/illinois_nazis.gif)
