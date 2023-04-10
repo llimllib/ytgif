@@ -90,3 +90,10 @@ ytgif -start 1:42.5 -finish 1:48.5 -trimborders -whisper-large \
 ```
 
 ![](gifs/illinois_nazis.gif)
+
+```sh
+./ytgif.bash -v -start 1:09 -finish 1:14 -whisper-large \
+'https://www.youtube.com/watch?v=Pe5eL8LQdY0' heavystuff.gif
+```
+
+![](gifs/heavystuff.gif)
