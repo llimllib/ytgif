@@ -394,7 +394,7 @@ if [ -n "$whisper" ]; then
         -filter_complex "\
           [0:v] fps=$fps, \
           $crop \
-          scale=$scale:-1, \
+          scale=$scale:-1:flags=lanczos, \
           split [a][b], \
           [a] palettegen [p], \
           [b][p] paletteuse, \
@@ -415,7 +415,7 @@ elif [ -n "$caption" ]; then
         -filter_complex "\
           [0:v] fps=$fps, \
           $crop \
-          scale=$scale:-1, \
+          scale=$scale:-1:flags=lanczos, \
           split [a][b], \
           [a] palettegen [p], \
           [b][p] paletteuse, \
@@ -437,7 +437,7 @@ elif [ ${#subtitles[@]} -eq 0 ] || [ -n "$nosubs" ]; then
         -filter_complex "\
           [0:v] fps=$fps, \
           $crop \
-          scale=$scale:-1, \
+          scale=$scale:-1:flags=lanczos, \
           split [a][b], \
           [a] palettegen [p], \
           [b][p] paletteuse" \
@@ -466,7 +466,7 @@ else
         -filter_complex "\
           [0:v] fps=$fps, \
           $crop \
-          scale=$scale:-1, \
+          scale=$scale:-1:flags=lanczos, \
           split [a][b], \
           [a] palettegen [p], \
           [b][p] paletteuse, \
