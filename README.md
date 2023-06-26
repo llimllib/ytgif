@@ -16,21 +16,21 @@ ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
 ## OPTIONS
 
 ```
--v:             print more verbose output
--trimborders    automatically trim letterbox borders
--scale n:       scale the video's width to n pixels [default 640]
--fps n:         set the fps of the output gif [default 20]
--gifsicle:      post-process the image with `gifsicle -O2`
--start time:    the time to start the video at
--finish time:   the time to finish the video at
--nosubs:        do not include subtitles in the output even if they're available
--sub-lang lang: sub language to choose
--autosubs:      prefer youtube's auto-generated subtitles
--caption text:  use a caption for the entire gif instead of subtitles
--fontsize:      the font size for the caption. Defaults to 30 if caption set,
-                otherwise to whatever ffmpeg defaults it to
--whisper:       use OpenAI's `whisper` to generate captions
--whisper-large: use whisper's "large" model instead of its medium one. May download a large model file
+-v:              print more verbose output
+-trimborders     automatically trim letterbox borders
+-scale n:        scale the video's width to n pixels [default 640]
+-fps n:          set the fps of the output gif [default 20]
+-gifsicle:       post-process the image with `gifsicle -O2`
+-start time:     the time to start the video at
+-finish time:    the time to finish the video at
+-trim <segment>: comma-separated time to trim from the middle. ex: -trim :40,:49. This is in the timeframe of the clipped video, not the original
+-nosubs:         do not include subtitles in the output even if they're available
+-sub-lang lang:  sub language to choose
+-autosubs:       prefer youtube's auto-generated subtitles
+-caption text:   use a caption for the entire gif instead of subtitles
+-fontsize:       the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
+-whisper:        use OpenAI's `whisper` to generate captions
+-whisper-large:  use whisper's "large" model instead of its medium one. May download a large model file
 ```
 
 ## PREREQUISITES
