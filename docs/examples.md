@@ -35,14 +35,14 @@ ytgif -start 49 -finish 55.5 -whisper \
 ![](gifs/frankenstein.gif)
 
 ```sh
-ytgif -v -start 0:20.2 -finish 0:23.9 -caption "say Hello to my Little Friend" \
+ytgif -start 0:20.2 -finish 0:23.9 -caption "say Hello to my Little Friend" \
     'https://www.youtube.com/watch?v=a_z4IuxAqpE' hello.gif
 ```
 
 ![](gifs/hello.gif)
 
 ```sh
-ytgif -v -start 1:58 -finish 1:59.9 -caption "damn you" \
+ytgif -start 1:58 -finish 1:59.9 -caption "damn you" \
     'https://www.youtube.com/watch?v=tskpXGAJMhw' damn.gif
 ```
 
@@ -92,8 +92,18 @@ ytgif -start 1:42.5 -finish 1:48.5 -trimborders -whisper-large \
 ![](gifs/illinois_nazis.gif)
 
 ```sh
-./ytgif.bash -v -start 1:09 -finish 1:14 -whisper-large \
+./ytgif.bash -start 1:09 -finish 1:14 -whisper-large \
 'https://www.youtube.com/watch?v=Pe5eL8LQdY0' heavystuff.gif
 ```
 
 ![](gifs/heavystuff.gif)
+
+**Trim a middle section out of the gif, from 3 seconds to 11 seconds&**
+
+```sh
+./ytgif.bash -start 1:48 -finish 2:02 -trimborders -nosubs \
+  -trim 3,11 \
+  'https://www.youtube.com/watch?v=LClTjcyNJSI' funeral.gif
+```
+
+![](gifs/funeral.gif)
