@@ -19,20 +19,21 @@ Download the video named in youtube-url and create a gif of it. Will embed the a
 
 OPTIONS
 
-  -v:             print more verbose output
-  -trimborders    automatically trim letterbox borders
-  -scale n:       scale the video's width to n pixels [default 640]
-  -fps n:         set the fps of the output gif [default 20]
-  -gifsicle:      post-process the image with `gifsicle -O2`
-  -start time:    the time to start the video at
-  -finish time:   the time to finish the video at
-  -nosubs:        do not include subtitles in the output even if they're available
-  -sub-lang lang: sub language to choose
-  -autosubs:      prefer youtube's auto-generated subtitles
-  -caption text:  use a caption for the entire gif instead of subtitles
-  -fontsize:      the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
-  -whisper:       use OpenAI's `whisper` to generate captions
-  -whisper-large: use whisper's "large" model instead of its medium one. May download a large model file
+  -v:              print more verbose output
+  -trimborders     automatically trim letterbox borders
+  -scale n:        scale the video's width to n pixels [default 640]
+  -fps n:          set the fps of the output gif [default 20]
+  -gifsicle:       post-process the image with `gifsicle -O2`
+  -start time:     the time to start the video at
+  -finish time:    the time to finish the video at
+  -trim <segment>: comma-separated time to trim from the middle. ex: -trim :40,:49. This is in the timeframe of the clipped video, not the original
+  -nosubs:         do not include subtitles in the output even if they're available
+  -sub-lang lang:  sub language to choose
+  -autosubs:       prefer youtube's auto-generated subtitles
+  -caption text:   use a caption for the entire gif instead of subtitles
+  -fontsize:       the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
+  -whisper:        use OpenAI's `whisper` to generate captions
+  -whisper-large:  use whisper's "large" model instead of its medium one. May download a large model file
 
 TIME
 
@@ -112,6 +113,7 @@ custom_fontsize=
 whisper=
 whisper_options=()
 trimborders=
+trim=
 
 if [ -z "${1:-}" ]; then
     usage
@@ -176,6 +178,10 @@ while true; do
             whisper="true"
             whisper_options=(--model large)
             shift
+        ;;
+        -trim)
+            trim=$2
+            shift 2
         ;;
         -trimborders)
             trimborders="true"
@@ -328,6 +334,26 @@ if ! ffmpeg -y "${ffmpegquiet[@]}" \
     exit 1
 fi
 
+# if we want to cut a middle section, re-encode the video to cut it out. This
+# could potentially go in the prior filter, but would be complex
+if [ -n "$trim" ]; then
+    trimstart=${trim%,*}
+    trimend=${trim#*,}
+    trimtmp="$(mktemp).$ext"
+    # can I skip the setpts bit?
+    # ffmpeg -i input.mp4 -vf select='not(between(t,10,12))',setpts=N/FRAME_RATE/TB -af aselect='not(between(t,10,12))',asetpts=N/SR/TB out.mp4
+    if ! ffmpeg -y "${ffmpegquiet[@]}" \
+        -i "$vclipfile" \
+        -vf select="not(between(t\,$trimstart\,$trimend))",setpts=N/FRAME_RATE/TB \
+        "$trimtmp"; then
+        printf "\033[31mfailed trimming middle section. \033[0m\nre-running with -v may show why\n"
+        rm -f "$trimtmp"
+        exit 1
+    fi
+    mv "$trimtmp" "$vclipfile"
+    rm -f "$trimtmp"
+fi
+
 if [ -n "$audiorequired" ]; then
     ext=${input_audio##*.}
     aclipfile="$ytgif_cache_folder/aclip_$yturl_clean.$ext"
@@ -341,6 +367,23 @@ if [ -n "$audiorequired" ]; then
         "$aclipfile"; then
         printf "\033[31mfailed running ffmpeg\033[0m\nre-running with -v may show why\n"
         exit 1
+    fi
+
+    # if we want to cut a middle section, re-encode the audio to cut it out
+    if [ -n "$trim" ]; then
+        trimstart=${trim%,*}
+        trimend=${trim#*,}
+        trimtmp="$(mktemp).$ext"
+        if ! ffmpeg -y "${ffmpegquiet[@]}" \
+            -i "$aclipfile" \
+            -af aselect="not(between(t\,$trimstart\,$trimend))",asetpts=N/SR/TB \
+            "$trimtmp"; then
+            printf "\033[31mfailed trimming middle section. \033[0m\nre-running with -v may show why\n"
+            rm -f "$trimtmp"
+            exit 1
+        fi
+        mv "$trimtmp" "$aclipfile"
+        rm -f "$trimtmp"
     fi
 fi
 
