@@ -221,20 +221,20 @@ fi
 if ! command -v yt-dlp &> /dev/null
 then
     printf "\033[31mYou must install yt-dlp\033[0m: https://github.com/yt-dlp/yt-dlp#installation\n\n"
-    usage
+    exit 1
 fi
 if [ -n "$gifsicle" ]; then
     if ! command -v gifsicle &> /dev/null
     then
         printf "\033[31mYou must install gifsicle\033[0m: https://www.lcdf.org/gifsicle/\n\n"
-        usage
+        exit 1
     fi
 fi
 if [ -n "$whisper" ]; then
     if ! command -v whisper &> /dev/null
     then
         printf "\033[31mYou must install whisper\033[0m: https://github.com/openai/whisper\n\n"
-        usage
+        exit 1
     fi
 fi
 
