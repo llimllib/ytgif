@@ -9,7 +9,7 @@ Download the video named in youtube-url and create a gif of it. Will embed the a
 That gif was generated with:
 
 ```shell
-ytgif -start 74.8 -finish 75.8 -nosubs -gifsicle \
+ytgif -start 74.8 -finish 75.8 -nosubs -trimborders \
     "https://www.youtube.com/watch?v=KlLMlJ2tDkg&t=50s" wow.gif
 ```
 
