@@ -409,8 +409,6 @@ fi
 if [ -n "$whisper" ]; then
     # run whisper to extract the subtitles
     # add --model large to run the biggest model
-    # TODO: add option to use model size
-    # if ! whisper "$aclipfile" -o "$ytgif_cache_folder" ; then
     if ! whisper "${whisper_options[@]}" \
         "$aclipfile" \
         -o "$ytgif_cache_folder" \
