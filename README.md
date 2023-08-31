@@ -10,7 +10,7 @@ That gif was generated with:
 
 ```shell
 ytgif -start 74.8 -finish 75.8 -nosubs -trimborders \
-    "https://www.youtube.com/watch?v=KlLMlJ2tDkg&t=50s" wow.gif
+    "https://www.youtube.com/watch?v=KlLMlJ2tDkg" wow.gif
 ```
 
 ## OPTIONS
