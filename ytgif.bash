@@ -32,8 +32,8 @@ OPTIONS
   -autosubs:       prefer youtube's auto-generated subtitles
   -caption text:   use a caption for the entire gif instead of subtitles
   -fontsize:       the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
-  -whisper:        use OpenAI's `whisper` to generate captions
-  -whisper-large:  use whisper's "large" model instead of its medium one. May download a large model file
+  -blisper:        use `blisper` to generate captions (see instructions below)
+  -blisper-large:  use blisper's "large" model instead of its medium one. May download a large model file
 
 TIME
 
@@ -43,9 +43,11 @@ INSTALLING
 
   copy ytgif.bash to somewhere on your $PATH and rename it `ytgif`
 
-WHISPER
+BLISPER
 
-  For instructions on installing OpenAI whisper, go to https://github.com/openai/whisper#setup
+  to install blisper for audio to text, run `brew install llimllib/blisper/blisper`
+
+  for other OSes, clone github.com/llimllib/blisper and build it with `make install`
 
 EXAMPLES
 
@@ -80,9 +82,9 @@ mistake":
     -fontsize 40 -caption "I've made a huge mistake" \
     "https://www.youtube.com/watch?v=GwQW3KW3DCc" mistake.gif
 
-Create a gif of Dr. Frankenstein, and use OpenAI whisper to caption it
+Create a gif of Dr. Frankenstein, and use blisper to caption it
 
-  ytgif -start 49 -finish 55.5 -whisper \
+  ytgif -start 49 -finish 55.5 -blisper \
     https://www.youtube.com/watch?v=WamF64GFPzg frankenstein.gif
 
 See more examples here: https://github.com/llimllib/ytgif/blob/main/docs/examples.md
@@ -92,7 +94,6 @@ NOTES
 - Be careful to quote the youtube URL, if it contains the & character it will not work unless quoted
 - ytgif caches downloaded videos in `/tmp/ytgif_cache`, so you can quickly try edits to the gif without re-downloading videos. These can be quite large, so you may want to clear that folder when you're done making a gif
 - youtube's auto subtitles are far from perfect, but often better than nothing
-- generating a gif using OpenAI whisper is a bit slow, be patient
 EOF
         exit 1
 }
@@ -110,8 +111,8 @@ audiorequired=
 caption=
 fontsize=30
 custom_fontsize=
-whisper=
-whisper_options=()
+blisper=
+blisper_options=()
 trimborders=
 trim=
 
@@ -168,15 +169,15 @@ while true; do
             custom_fontsize="true"
             shift 2
         ;;
-        -whisper)
+        -blisper)
             audiorequired="true"
-            whisper="true"
+            blisper="true"
             shift
         ;;
-        -whisper-large)
+        -blisper-large)
             audiorequired="true"
-            whisper="true"
-            whisper_options=(--model large)
+            blisper="true"
+            blisper_options=(-model large)
             shift
         ;;
         -trim)
@@ -215,7 +216,6 @@ fi
 if ! command -v ffmpeg &> /dev/null
 then
     printf "\033[31mYou must install ffmpeg\033[0m: https://ffmpeg.org/download.html\n\n"
-    usage
 fi
 
 if ! command -v yt-dlp &> /dev/null
@@ -230,17 +230,17 @@ if [ -n "$gifsicle" ]; then
         exit 1
     fi
 fi
-if [ -n "$whisper" ]; then
-    if ! command -v whisper &> /dev/null
+if [ -n "$blisper" ]; then
+    if ! command -v blisper &> /dev/null
     then
-        printf "\033[31mYou must install whisper\033[0m: https://github.com/openai/whisper\n\n"
+        printf "\033[31mYou must install blisper\033[0m: https://github.com/llimllib/blisper\n\n"
         exit 1
     fi
 fi
 
 # there should be two arguments remaining: the youtube URL and the output file name
 if [ $# -lt 2 ]; then
-    usage
+    printf "\033[31mMissing required argument for video URL or gif file name\n"
 fi
 
 yturl=$1
@@ -406,18 +406,18 @@ fi
 ###########################
 # create output file
 ###########################
-if [ -n "$whisper" ]; then
-    # run whisper to extract the subtitles
+if [ -n "$blisper" ]; then
+    subtitle="$ytgif_cache_folder/aclip_$yturl_clean.srt"
+
+    # run blisper to extract the subtitles
     # add --model large to run the biggest model
-    if ! whisper "${whisper_options[@]}" \
+    if ! blisper "${blisper_options[@]}" \
+        -format srt \
         "$aclipfile" \
-        -o "$ytgif_cache_folder" \
-        --output_format srt ; then
-        printf "\033[31mfailed running whisper\033[0m\nre-running with -v may show why\n"
+        "$subtitle" ; then
+        printf "\033[31mfailed running blisper\033[0m\nre-running with -v may show why\n"
         exit 1
     fi
-
-    subtitle="$ytgif_cache_folder/aclip_$yturl_clean.srt"
 
     # if fontsize has been set, add a "force_style" with the specified font
     # size
@@ -429,7 +429,7 @@ if [ -n "$whisper" ]; then
     fi
 
     # convert the clipfile to a gif, using the subtitles we created with
-    # whisper
+    # blisper
     if ! ffmpeg -y "${ffmpegquiet[@]}" \
         -i "$vclipfile" \
         -filter_complex "\
