@@ -29,8 +29,8 @@ ytgif -start 74.8 -finish 75.8 -nosubs -trimborders \
 -autosubs:       prefer youtube's auto-generated subtitles
 -caption text:   use a caption for the entire gif instead of subtitles
 -fontsize:       the font size for the caption. Defaults to 30 if caption set, otherwise to whatever ffmpeg defaults it to
--whisper:        use OpenAI's `whisper` to generate captions
--whisper-large:  use whisper's "large" model instead of its medium one. May download a large model file
+-blisper:        use `blisper` to generate captions (see instructions below)
+-blisper-large:  use blisper's "large" model instead of its medium one. May download a large model file
 ```
 
 ## PREREQUISITES
@@ -41,11 +41,22 @@ This script requires [`ffmpeg`](https://ffmpeg.org/) and [`yt-dlp`](https://gith
 
 - [`gifsicle`](https://www.lcdf.org/gifsicle/) is an optional dependency
   - it's used for optimizing gifs as a final pass
-- [`whisper`](https://github.com/openai/whisper#setup) is an optional dependency
+- [`blisper`](https://github.com/llimllib/blisper) is an optional dependency
   - it's used for generating subtitles for a video that doesn't have them
-  - it often does a much better job than youtube, but it is a bit slow to use.
 
 This script has only been tested on a mac, where `brew install bash ffmpeg yt-dlp gifsicle` should work to get your dependencies in order. Please report bugs if it fails on other platforms.
+
+**note**: The default `ffmpeg` downloaded by homebrew lacks the capability to draw text on gifs, so if you want to use `ytgif` I recommend building it from source with `brew install -s ffmpeg`, which produces a more fully-featured ffmpeg.
+
+If you see an error `No such filter: 'drawtext'`, this is probably what's going on.
+
+## WHY BLISPER?
+
+- ggerganov's superb [whisper.cpp](https://github.com/ggerganov/whisper.cpp/tree/master) is vastly faster than OpenAI's whisper model
+- unfortunately, it lacks a good command line UI - the one it ships with requires you to manage your own model files
+- so I wrote blisper, which is a simple UI for whisper.cpp that manages model files for you
+
+You can install blisper with `brew install llimllib/whisper/blisper` if you use homebrew; otherwise you'll have to clone it and build it yourself, unfortunately.
 
 ## TIME
 
